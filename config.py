@@ -1,3 +1,5 @@
-key = 'hJGmcyQasmbXhQtcflT3QFc81PgUKrGmPIxk2cLR7BBMcSmldAWzzkVyy14sl2WgX090hbDcMoO'
+import secrets
+
+key = secrets.token_urlsafe(40)
 debug = True
 originURL = "https://news.ycombinator.com/"
