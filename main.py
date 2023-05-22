@@ -11,31 +11,33 @@ def create_app():
 
     @app.route('/')
     @app.route('/<reqPath>', methods=["GET", "POST"])
-    def index(reqPath=""):
+    def index(reqPath=""):  # unused arg for compatibility
         try:
-            if request.method == "GET":
-                data = requests.get(config.originURL + request.url.replace(request.host_url, ""),
+            if request.method == "GET":  # for vast majority requests
+                data = requests.get(request.url.replace(request.host_url, config.originURL),
                                     cookies=request.cookies,
-                                    timeout=2)
-            elif request.method == "POST":
-                data = requests.post(config.originURL + request.url.replace(request.host_url, ""),
+                                    timeout=config.reqTimeout)
+            else:  # mean POST. For user creation, autorization and submit post
+                data = requests.post(request.url.replace(request.host_url, config.originURL),
                                      cookies=request.cookies,
-                                     data=request.form.to_dict(),
-                                     timeout=2)
-            else:
-                return make_response("Method not supported!", 418)
+                                     data=request.form.to_dict(),  # origin form data is ImmutableMultiDict
+                                     timeout=config.reqTimeout)
 
             if "Content-Type" in data.headers.keys():
                 if "text/html" in data.headers["Content-Type"]:
+                    # Need to parse only html
                     addTM = AddTM()
                     resp = make_response(addTM.feed(data.text))
                 else:
                     resp = make_response(data.content)
+                # The only important header
                 resp.headers["Content-Type"] = data.headers["Content-Type"]
             else:
                 resp = make_response(data.content)
 
             if "/login" in request.url and request.method == "POST":
+                # There is one 302 redirect, that places autorization cookie and which requests module follows
+                # automatically
                 resp.set_cookie("user", requests.utils.dict_from_cookiejar(data.history[0].cookies)["user"])
 
             if "/logout" in request.url:
