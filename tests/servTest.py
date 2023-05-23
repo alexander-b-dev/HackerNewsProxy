@@ -35,6 +35,15 @@ class MyTestCase(unittest.TestCase):
         self.assertEqual(504, data.status_code)
         config.reqTimeout = 2
 
+    def test_NonExisting(self):
+        data = self.client.get("/ololo")
+        self.assertEqual(404, data.status_code)
+        self.assertEqual("Unknown.",  data.text)
+
+    def test_WrongCredentials(self):
+        data = self.client.post("/login", data={"acct": self.userName, "pw": "ololo"})
+        self.assertEqual(200, data.status_code)
+
 
 if __name__ == '__main__':
     unittest.main()

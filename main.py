@@ -1,7 +1,7 @@
 from flask import Flask, make_response, request
 import config
 import requests
-from parser import AddTM
+from parser import HTMLWorker
 
 
 def create_app():
@@ -26,8 +26,8 @@ def create_app():
             if "Content-Type" in data.headers.keys():
                 if "text/html" in data.headers["Content-Type"]:
                     # Need to parse only html
-                    addTM = AddTM()
-                    resp = make_response(addTM.feed(data.text))
+                    addTM = HTMLWorker(config.originURL, request.host_url)
+                    resp = make_response(addTM.feed(data.content.decode("utf-8")))
                 else:
                     resp = make_response(data.content)
                 # The only important header
@@ -36,12 +36,17 @@ def create_app():
                 resp = make_response(data.content)
 
             if "/login" in request.url and request.method == "POST":
-                # There is one 302 redirect, that places autorization cookie and which requests module follows
-                # automatically
-                resp.set_cookie("user", requests.utils.dict_from_cookiejar(data.history[0].cookies)["user"])
+                # If all is ok, there is one 302 redirect, that places autorization cookie and which requests
+                # module follows automatically
+                if len(data.history) > 0:
+                    cookies = requests.utils.dict_from_cookiejar(data.history[0].cookies)
+                    if "user" in cookies.keys():
+                        resp.set_cookie("user", cookies["user"])
 
             if "/logout" in request.url:
                 resp.delete_cookie("user")
+
+            resp.status_code = data.status_code
 
             return resp
 
